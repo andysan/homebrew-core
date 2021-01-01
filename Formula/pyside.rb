@@ -23,6 +23,15 @@ class Pyside < Formula
 
   def install
     ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
+    if MacOS.version == :big_sur
+      # Sysconfig promotes '11' to an integer which confuses the build
+      # system. See:
+      #  * https://bugreports.qt.io/browse/PYSIDE-1469
+      #  * https://codereview.qt-project.org/c/pyside/pyside-setup/+/328375
+      inreplace "build_scripts/wheel_utils.py",
+                "python_target_split = [int(x) for x in python_target.split('.')]",
+                "python_target_split = [int(x) for x in str(python_target).split('.')]"
+    end
 
     args = %W[
       --ignore-git
