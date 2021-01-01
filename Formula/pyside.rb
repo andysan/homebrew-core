@@ -37,6 +37,7 @@ class Pyside < Formula
       --ignore-git
       --parallel=#{ENV.make_jobs}
       --install-scripts #{bin}
+      --rpath=#{lib}
     ]
 
     xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
