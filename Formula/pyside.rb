@@ -57,7 +57,7 @@ class Pyside < Formula
 
   test do
     system Formula["python@3.9"].opt_bin/"python3", "-c", "import PySide2"
-    %w[
+    modules = %w[
       Core
       Gui
       Location
@@ -65,9 +65,14 @@ class Pyside < Formula
       Network
       Quick
       Svg
-      WebEngineWidgets
       Widgets
       Xml
-    ].each { |mod| system Formula["python@3.9"].opt_bin/"python3", "-c", "import PySide2.Qt#{mod}" }
+    ]
+
+    # QT web engine is currently not supported on Apple
+    # silicon. Re-enable it once it has been enabled in the qt.rb.
+    modules << "WebEngineWidgets" unless Hardware::CPU.arch == :arm64
+
+    modules.each { |mod| system Formula["python@3.9"].opt_bin/"python3", "-c", "import PySide2.Qt#{mod}" }
   end
 end
