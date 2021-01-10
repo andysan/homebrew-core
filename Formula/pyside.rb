@@ -38,6 +38,7 @@ class Pyside < Formula
       --parallel=#{ENV.make_jobs}
       --install-scripts #{bin}
       --rpath=#{lib}
+      --macos-sysroot=#{MacOS.sdk_path}
     ]
 
     xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
