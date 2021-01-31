@@ -19,7 +19,7 @@ class Pyside < Formula
   end
 
   depends_on "cmake" => :build
-  depends_on "llvm" => :build
+  depends_on "llvm"
   depends_on "python@3.9"
   depends_on "qt"
 
@@ -47,16 +47,31 @@ class Pyside < Formula
 
     system Formula["python@3.9"].opt_bin/"python3",
            *Language::Python.setup_install_args(prefix),
-           "--install-lib", lib/"python#{xy}/site-packages", *args,
-           "--build-type=shiboken2"
+           *args
 
-    system Formula["python@3.9"].opt_bin/"python3",
-           *Language::Python.setup_install_args(prefix),
-           "--install-lib", lib/"python#{xy}/site-packages", *args,
-           "--build-type=pyside2"
+    # Install C development files manually since the Python installer
+    # doesn't include them.
+    lib.install Dir["pyside3_install/py#{xy}-qt*/lib/{cmake,pkgconfig,*.dylib}"]
+    include.install Dir["pyside3_install/py#{xy}-qt*/include/*"]
+    share.install Dir["pyside3_install/py#{xy}-qt*/share/*"]
+    man.install Dir["pyside3_install/py#{xy}-qt*/share/man/*"]
 
-    lib.install_symlink Dir.glob(lib/"python#{xy}/site-packages/PySide2/*.dylib")
-    lib.install_symlink Dir.glob(lib/"python#{xy}/site-packages/shiboken2/*.dylib")
+    # The Python build system stores the path to the tmp directory in
+    # several files.
+    inreplace Dir[lib/"pkgconfig/*.pc",
+                  lib/"cmake/*/Shiboken2Targets-release.cmake"],
+              %r{(/private)?/tmp/.*/pyside3_install/[^/]*},
+              prefix.to_s
+
+    # No need to include the dynamic libraries in two locations
+    rm Dir[lib/"python#{xy}/site-packages/{PySide2,shiboken2}/*.dylib"]
+    (lib/"python#{xy}/site-packages/PySide2").install_symlink Dir[lib/"libpyside2.*.dylib"]
+    (lib/"python#{xy}/site-packages/shiboken2").install_symlink Dir[lib/"libshiboken2.*.dylib"]
+
+    # The libraries have no LC_RPATH so patch it up here.
+    Dir[lib/"libpyside2.cpython-*-darwin.dylib"].each do |f|
+      MachO::Tools.add_rpath(f, lib.to_s)
+    end
   end
 
   test do
