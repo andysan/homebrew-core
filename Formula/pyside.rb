@@ -19,41 +19,24 @@ class Pyside < Formula
   end
 
   depends_on "cmake" => :build
-  depends_on "llvm" => :build
+  depends_on "ninja" => :build
+  depends_on "llvm"
   depends_on "python@3.9"
   depends_on "qt"
 
   def install
-    ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
-    if MacOS.version == :big_sur
-      # Sysconfig promotes '11' to an integer which confuses the build
-      # system. See:
-      #  * https://bugreports.qt.io/browse/PYSIDE-1469
-      #  * https://codereview.qt-project.org/c/pyside/pyside-setup/+/328375
-      inreplace "build_scripts/wheel_utils.py",
-                "python_target_split = [int(x) for x in python_target.split('.')]",
-                "python_target_split = [int(x) for x in str(python_target).split('.')]"
-    end
-
-    args = %W[
-      --ignore-git
-      --parallel=#{ENV.make_jobs}
-      --install-scripts #{bin}
-      --rpath=#{lib}
-      --macos-sysroot=#{MacOS.sdk_path}
-    ]
-
     xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
 
-    system Formula["python@3.9"].opt_bin/"python3",
-           *Language::Python.setup_install_args(prefix),
-           "--install-lib", lib/"python#{xy}/site-packages", *args,
-           "--build-type=shiboken2"
+    args = std_cmake_args + %W[
+      -GNinja
+      -DPYTHON_EXECUTABLE=#{Formula["python@3.9"].opt_bin}/python#{xy}
+      -DCMAKE_INSTALL_RPATH=#{lib}
+    ]
 
-    system Formula["python@3.9"].opt_bin/"python3",
-           *Language::Python.setup_install_args(prefix),
-           "--install-lib", lib/"python#{xy}/site-packages", *args,
-           "--build-type=pyside2"
+    mkdir "build" do
+      system "cmake", *args, ".."
+      system "ninja", "install"
+    end
 
     lib.install_symlink Dir.glob(lib/"python#{xy}/site-packages/PySide2/*.dylib")
     lib.install_symlink Dir.glob(lib/"python#{xy}/site-packages/shiboken2/*.dylib")
