@@ -25,12 +25,17 @@ class Pyside < Formula
   depends_on "qt"
 
   def install
+    # Remove llvm from the path to prevent linking against
+    # non-standard libstdc++.
+    ENV.remove "PATH", Formula["llvm"].opt_bin
+
     xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
 
     args = std_cmake_args + %W[
       -GNinja
       -DPYTHON_EXECUTABLE=#{Formula["python@3.9"].opt_bin}/python#{xy}
       -DCMAKE_INSTALL_RPATH=#{lib}
+      -DLLVM_CONFIG=#{Formula["llvm"].opt_bin}/llvm-config
     ]
 
     mkdir "build" do
