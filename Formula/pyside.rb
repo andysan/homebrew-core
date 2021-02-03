@@ -36,6 +36,7 @@ class Pyside < Formula
       -DPYTHON_EXECUTABLE=#{Formula["python@3.9"].opt_bin}/python#{xy}
       -DCMAKE_INSTALL_RPATH=#{lib}
       -DLLVM_CONFIG=#{Formula["llvm"].opt_bin}/llvm-config
+      -DBUILD_TESTS=OFF
     ]
 
     mkdir "build" do
